@@ -11,10 +11,12 @@ using namespace std;
 class Buyer //购买者
 {
 public:
-	Buyer(string name, int id);
-
+	Buyer(string name, long long id);
+	bool sameBuyer(Buyer* buyer);
+	//返回当前buyer和入参的buyer是否同一个人
+	//也可以重载 == 运算符实现
 	string m_strName;  //购买者名字
-	int m_iId;       //购买者身份证号
+	long long  m_iId;       //购买者身份证号
 };
 
 #endif

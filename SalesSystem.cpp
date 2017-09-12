@@ -12,71 +12,80 @@ using namespace std;
 
 RemainedTicketsInfo * SalesSystem::searchRemainedTickesInfo(Station * startStation, Station * endStation)
 {
-	int num = 10;//10个座位
-	for (int i = 0; i < currentTicketID; i++)
-	{
-		int m = startStation->m_iStationID;
-		if (m >= tickets.at(i)->m_pStartStation->m_iStationID&&m <= tickets.at(i)->m_pEndStation->m_iStationID)
-			num -= 1;
+	unsigned int currentSeat = m_pLine->m_pTrain->m_uTotalSeat;
+	for (int i = 0; i < this->ticketHistory.size(); i++) {
+		Ticket* tmpTicket = this->ticketHistory[i];
+		if (startStationWithIn(startStation, endStation, tmpTicket->m_pStartStation, tmpTicket->m_pEndStation)) 
+		{
+			currentSeat--;
+		}
 	}
-	 searchRemainedTickesInfo(startStation, endStation)->m_uRemainedTickets=num ;
-	return nullptr;
+	if (currentSeat > 0) 
+	{
+		return new RemainedTicketsInfo(startStation, endStation, currentSeat);
+	}
+	return NULL;
 }
 
 Ticket * SalesSystem::buyTicket(Buyer * buyer, Station * startStation, Station * endStation)
 {
-	Ticket* tempTicket=NULL;
-	tempTicket->m_pBuyer = buyer;
-	tempTicket->m_pStartStation = startStation;
-	tempTicket->m_pEndStation = endStation;
-	tickets.push_back(tempTicket);
-	return nullptr;
+	//首先查询余票
+	RemainedTicketsInfo* remainedTicketInfo = this->searchRemainedTickesInfo(startStation, endStation);
+	Ticket* newTicket = NULL;
+	if (remainedTicketInfo) {
+		//查询余票成功，开始订票
+		newTicket = new Ticket(buyer, startStation, endStation);
+		this->ticketHistory.push_back(newTicket);
+	}
+	return newTicket;
 }
 
 vector<Ticket*> SalesSystem::searchTickesInfo(Buyer * buyer)
 {
-	for (int i=0 ; i < currentTicketID; i++)
+	vector<Ticket*> resultTickets = vector<Ticket*>();
+	for (int i = 0; i < this->ticketHistory.size(); i++) 
 	{
-		if (tickets.at(i)->m_pBuyer->m_strName == buyer->m_strName || tickets.at(i)->m_pBuyer->m_iId == buyer->m_iId) 
+		//从购票历史中，搜索满足条件的票
+		Ticket* tmpticket = ticketHistory[i];
+		if (tmpticket->m_pBuyer->sameBuyer(buyer))
 		{
-			tickets.at(i)->print();
+			ticketHistory[i]->print();
+			resultTickets.push_back(tmpticket);
 		}
 	}
-	return vector<Ticket*>();
+	return resultTickets;
 }
 
-bool SalesSystem::refoundTickets(Buyer * buyer)
+vector<Ticket*> SalesSystem::refoundTickets(Buyer* buyer)
 {
-	for (int i = 0; i < currentTicketID ; i++)
+	vector<Ticket*> resultTickets = vector<Ticket*>();
+	vector<Ticket*>::iterator it = this->ticketHistory.begin();
+
+	//从购票历史中，查询和入参buyer一致的ticket，并且从购票历史中删除
+	while (it != this->ticketHistory.end())
 	{
-		if (tickets.at(i)->m_pBuyer->m_strName == buyer->m_strName || tickets.at(i)->m_pBuyer->m_iId == buyer->m_iId)
-		{
-			tickets.erase(tickets.begin() +i);
+		Ticket* tmpticket = *it;
+		if (tmpticket->m_pBuyer->sameBuyer(buyer)) {
+			it = this->ticketHistory.erase(it);
+			resultTickets.push_back(tmpticket);
+		}
+		else {
+			it++;
 		}
 	}
-	return false;
+	return resultTickets;
 }
 
-Station * SalesSystem:: stationWithIndex(int index)
-{
-	Station* currentStation = m_pLine->m_pStartStation;
-	while (currentStation && currentStation->m_iStationID != index)
-	{
-		currentStation = currentStation->m_pNextStation;
-	}
-	return currentStation;
-}
 
-SalesSystem::SalesSystem()
-{
+SalesSystem::SalesSystem() {
 	Station* firstStation = setupStation();
 	Train* train = setupTrain();
-	m_pLine = new Line("K27", 1234, firstStation, train);
+	this->m_pLine = new Line("K27", 1234, firstStation, train);
+	this->ticketHistory = loadTicketFromFile();
 }
 
-Train * SalesSystem::setupTrain()
-{
-	return new Train("Old train", 1234, 10);
+SalesSystem::~SalesSystem() {
+	saveTicketToFile();
 }
 
 Station * SalesSystem::setupStation()
@@ -100,4 +109,39 @@ Station * SalesSystem::setupStation()
 		distanceToNext++;
 	}
 	return firstStation;
+}
+
+Station * SalesSystem:: stationWithIndex(int index)
+{
+	Station* currentStation = m_pLine->m_pStartStation;
+	while (currentStation && currentStation->m_iStationID != index)
+	{
+		currentStation = currentStation->m_pNextStation;
+	}
+	return currentStation;
+}
+
+Train * SalesSystem::setupTrain()
+{
+	return new Train("Old train", 1234, 10);
+}
+
+bool SalesSystem::startStationWithIn(Station*searchStartStation, Station*searchEndStation, Station* startStation, Station* endStation) {
+	Station* currentStation = searchStartStation;
+	vector<int> stationIDs = vector<int>();
+	while (currentStation) {
+		if (currentStation->m_iStationID <= endStation->m_iStationID) {
+			if (currentStation->m_iStationID >= startStation->m_iStationID) {
+				stationIDs.push_back(currentStation->m_iStationID);
+				if (stationIDs.size() == 2) {
+					return true;
+				}
+			}
+		}
+		if (currentStation->m_iStationID == searchEndStation->m_iStationID) {
+			break;
+		}
+		currentStation = currentStation->m_pNextStation;
+	}
+	return false;
 }
