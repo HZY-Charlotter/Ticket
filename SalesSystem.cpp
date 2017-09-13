@@ -81,11 +81,11 @@ SalesSystem::SalesSystem() {
 	Station* firstStation = setupStation();
 	Train* train = setupTrain();
 	this->m_pLine = new Line("K27", 1234, firstStation, train);
-	this->ticketHistory = loadTicketFromFile();
+
 }
 
-SalesSystem::~SalesSystem() {
-	saveTicketToFile();
+SalesSystem::~SalesSystem() 
+{
 }
 
 Station * SalesSystem::setupStation()

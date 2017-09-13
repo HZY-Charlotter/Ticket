@@ -1,4 +1,5 @@
 #pragma once
+
 #ifndef SalesSystem_h
 #define SalesSystem_h
 
@@ -61,12 +62,5 @@ private:
 	//param endStation 终点车站
 	//return 是否在起终点车站范围内
 
-	vector<Ticket*> loadTicketFromFile();
-	//从文件中读取购票历史
-	//return 购票历史
-
-	bool saveTicketToFile();
-	//向文件保存购票历史
-	//return 是否保存成功
 };
 #endif
